@@ -1,0 +1,31 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: localhost
+  tasks:
+    - name: build the cross-build image
+      command: docker build -t co2mon_compile_raspberry1 .
+
+    - name: compile the binary
+      command: cross build --target=arm-unknown-linux-gnueabihf --release
+
+- hosts: mooncake
+  tasks:
+    - name: create udev rule to read co2 monitor
+      copy:
+        dest: /etc/udev/rules.d/60-co2mon.rules
+        content: ACTION=="add|change", SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE:="0666"
+      notify:
+        - udevadm reload
+        - udevadm trigger
+
+    - name: copy over the binary
+      copy:
+        src: ./target/arm-unknown-linux-gnueabihf/release/co2-mqtt
+        dest: /usr/local/bin/co2-mqtt
+
+  handlers:
+    - name: udevadm reload
+      command: udevadm control --reload
+
+    - name: udevadm trigger
+      command: udevadm trigger
