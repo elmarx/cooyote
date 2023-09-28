@@ -1,0 +1,9 @@
+#!/usr/bin/env ansible-playbook
+---
+- hosts: all
+  tasks:
+    - name: copy over the binary
+      copy:
+        src: ../target/arm-unknown-linux-gnueabihf/release/cooyote
+        dest: /usr/local/bin/cooyote
+        mode: 0755

@@ -1,0 +1,17 @@
+---
+- hosts: all
+  tasks:
+    - name: create udev rule to read co2 monitor
+      copy:
+        dest: /etc/udev/rules.d/60-co2mon.rules
+        content: ACTION=="add|change", SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE:="0666"
+      notify:
+        - udevadm reload
+        - udevadm trigger
+
+  handlers:
+    - name: udevadm reload
+      command: udevadm control --reload
+
+    - name: udevadm trigger
+      command: udevadm trigger
