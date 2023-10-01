@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 co2mon = "2.1.1"
+prometheus = "0.13.3"
