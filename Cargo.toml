@@ -6,5 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+axum = { version = "0.6.20", features = ["macros", "headers"] }
 co2mon = "2.1.1"
 prometheus = "0.13.3"
+tokio = { version = "1.32.0", features = ["full"] }
