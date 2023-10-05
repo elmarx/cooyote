@@ -8,6 +8,25 @@
       notify:
         - udevadm reload
         - udevadm trigger
+    - name: install system service to run cooyote
+      copy:
+        dest: /etc/systemd/system/cooyote.service
+        content: |
+          [Unit]
+          Description=Cooyote Web Server
+          After=network.target
+          
+          [Service]
+          ExecStart=/usr/local/bin/cooyote
+          Restart=always
+          User=nobody
+          Group=nogroup
+          
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - reload systemd
+        - restart cooyote
 
   handlers:
     - name: udevadm reload
@@ -15,3 +34,12 @@
 
     - name: udevadm trigger
       command: udevadm trigger
+
+    - name: reload systemd
+      command: systemctl daemon-reload
+
+    - name: restart cooyote
+      systemd:
+        name: cooyote
+        state: restarted
+        enabled: yes
