@@ -1,5 +1,5 @@
 use axum::routing::get;
-use axum::{Router, Server};
+use axum::{Router};
 use std::error::Error;
 use std::sync::Arc;
 use std::thread;
@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use crate::metrics::metrics;
 use prometheus::{Gauge, Opts, Registry};
+use tokio::net::TcpListener;
 
 mod metrics;
 
@@ -37,9 +38,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .route("/metrics", get(metrics))
         .with_state(Arc::new(r));
 
-    Server::bind(&"0.0.0.0:8080".parse()?)
-        .serve(app.into_make_service())
-        .await?;
+    let listener = TcpListener::bind("0.0.0.0:8080").await?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
