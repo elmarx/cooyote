@@ -1,10 +1,12 @@
 ---
 - hosts: all
   tasks:
-    - name: create udev rule to read co2 monitor
+    - name: create udev rule to read co2 monitor and start service
       copy:
         dest: /etc/udev/rules.d/60-co2mon.rules
-        content: ACTION=="add|change", SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE:="0666"
+        content: |
+          ACTION=="add", SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE:="0666", TAG+="systemd", ENV{SYSTEMD_WANTS}="cooyote.service"
+          ACTION=="remove", SUBSYSTEMS=="usb", ENV{PRODUCT}=="4d9/a052/*", RUN+="/bin/systemctl stop cooyote.service"
       notify:
         - udevadm reload
         - udevadm trigger
@@ -18,7 +20,8 @@
           
           [Service]
           ExecStart=/usr/local/bin/cooyote
-          Restart=always
+          Restart=on-failure
+          RestartSec=5
           User=nobody
           Group=nogroup
           
@@ -26,7 +29,6 @@
           WantedBy=multi-user.target
       notify:
         - reload systemd
-        - restart cooyote
 
   handlers:
     - name: udevadm reload
@@ -38,8 +40,3 @@
     - name: reload systemd
       command: systemctl daemon-reload
 
-    - name: restart cooyote
-      systemd:
-        name: cooyote
-        state: restarted
-        enabled: yes
