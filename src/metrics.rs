@@ -1,10 +1,10 @@
+use axum::debug_handler;
 use axum::extract::State;
-use axum::{debug_handler};
+use axum_extra::headers::ContentType;
+use axum_extra::TypedHeader;
 use prometheus::{Encoder, Registry, TextEncoder};
 use std::str::FromStr;
 use std::sync::Arc;
-use axum_extra::headers::ContentType;
-use axum_extra::TypedHeader;
 
 #[debug_handler]
 pub async fn metrics(State(registry): State<Arc<Registry>>) -> (TypedHeader<ContentType>, Vec<u8>) {

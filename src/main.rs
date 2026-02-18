@@ -1,5 +1,5 @@
 use axum::routing::get;
-use axum::{Router};
+use axum::Router;
 use std::error::Error;
 use std::sync::Arc;
 use std::thread;
