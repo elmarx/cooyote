@@ -1,5 +1,4 @@
 use crate::metrics::metrics;
-use crate::zyaura::Item;
 use axum::routing::get;
 use axum::Router;
 use prometheus::{Gauge, Opts, Registry};
@@ -25,12 +24,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     r.register(Box::new(temperature_gauge.clone()))?;
 
     tokio::task::spawn_blocking(move || loop {
-        let temp = sensor.read_item();
+        let measurement = sensor.read();
 
-        match temp {
-            Ok(Item::Temperature(t)) => temperature_gauge.set(f64::from(t)),
-            Ok(Item::CO2(c)) => temperature_gauge.set(f64::from(c)),
-            _ => {}
+        match measurement {
+            Ok(measurement) => {
+                temperature_gauge.set(f64::from(measurement.temperature));
+                co2_gauge.set(f64::from(measurement.co2));
+            }
+            Err(e) => {
+                eprintln!("Error reading measurement: {e}");
+            }
         }
 
         thread::sleep(Duration::from_secs(60));

@@ -17,6 +17,12 @@ pub enum Error {
     ChecksumMismatch,
 }
 
+#[derive(PartialEq, Debug)]
+pub struct Measurement {
+    pub temperature: f32,
+    pub co2: u16,
+}
+
 impl Sensor {
     pub fn new() -> Result<Self, Error> {
         let api: hidapi::HidApi = hidapi::HidApi::new()?;
@@ -35,6 +41,27 @@ impl Sensor {
         assert_eq!(self.device.read(&mut data)?, 8, "Expected to read 8 bytes");
 
         Item::try_from(data)
+    }
+
+    pub fn read(&self) -> Result<Measurement, Error> {
+        let mut co2: Option<u16> = None;
+        let mut temp: Option<f32> = None;
+
+        loop {
+            let item = self.read_item()?;
+            match item {
+                Item::CO2(c) => co2 = Some(c),
+                Item::Temperature(t) => temp = Some(t),
+                _ => {}
+            }
+
+            if let (Some(c), Some(t)) = (co2, temp) {
+                return Ok(Measurement {
+                    temperature: t,
+                    co2: c,
+                });
+            }
+        }
     }
 }
 
