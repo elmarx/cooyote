@@ -23,6 +23,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     r.register(Box::new(co2_gauge.clone()))?;
     r.register(Box::new(temperature_gauge.clone()))?;
 
+    // set an initial measurement to not serve "0" and make sure we can read the sensor
+    let initial_measurement = sensor.read()?;
+    temperature_gauge.set(f64::from(initial_measurement.temperature));
+    co2_gauge.set(f64::from(initial_measurement.co2));
+
     tokio::task::spawn_blocking(move || loop {
         let measurement = sensor.read();
 
