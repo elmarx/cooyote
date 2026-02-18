@@ -7,12 +7,20 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tokio::net::TcpListener;
+use tracing::{error, info};
 
 mod metrics;
 mod zyaura;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+        )
+        .init();
+
     let sensor = zyaura::Sensor::new()?;
 
     let co2_gauge = Gauge::with_opts(Opts::new("co2_ppm", "co2 ppm"))?;
@@ -37,7 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 co2_gauge.set(f64::from(measurement.co2));
             }
             Err(e) => {
-                eprintln!("Error reading measurement: {e}");
+                error!(error = %e, "error reading measurement");
             }
         }
 
@@ -49,6 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_state(Arc::new(r));
 
     let listener = TcpListener::bind("0.0.0.0:8080").await?;
+    info!(address = "0.0.0.0:8080", "listening");
     axum::serve(listener, app).await?;
 
     Ok(())
