@@ -1,42 +1,37 @@
 ---
 - hosts: all
   tasks:
+    - name: ensure plugdev group exists (default on Debian, used to grant device access)
+      command: getent group plugdev
+      register: plugdev_group
+      changed_when: false
+      failed_when: plugdev_group.rc != 0
+
     - name: create udev rule to read co2 monitor and start service
       copy:
         dest: /etc/udev/rules.d/60-co2mon.rules
         content: |
-          ACTION=="add", SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", MODE:="0666", TAG+="systemd", ENV{SYSTEMD_WANTS}="cooyote.service"
-          ACTION=="remove", SUBSYSTEMS=="usb", ENV{PRODUCT}=="4d9/a052/*", RUN+="/bin/systemctl stop cooyote.service"
+          ACTION=="add", SUBSYSTEMS=="usb", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", GROUP="plugdev", MODE:="0660", TAG+="systemd", ENV{SYSTEMD_WANTS}="cooyote.service"
+          ACTION=="remove", SUBSYSTEMS=="usb", ENV{PRODUCT}=="4d9/a052/*", RUN+="/bin/systemctl --no-block stop cooyote.service"
       notify:
         - udevadm reload
         - udevadm trigger
     - name: install system service to run cooyote
       copy:
+        src: ../cooyote.service
         dest: /etc/systemd/system/cooyote.service
-        content: |
-          [Unit]
-          Description=Cooyote Web Server
-          After=network.target
-          
-          [Service]
-          ExecStart=/usr/local/bin/cooyote
-          Restart=on-failure
-          RestartSec=5
-          User=nobody
-          Group=nogroup
-          
-          [Install]
-          WantedBy=multi-user.target
       notify:
         - reload systemd
 
   handlers:
+    - name: reload systemd
+      command: systemctl daemon-reload
+
     - name: udevadm reload
       command: udevadm control --reload
 
     - name: udevadm trigger
-      command: udevadm trigger
-
-    - name: reload systemd
-      command: systemctl daemon-reload
+      # our rule only matches ACTION=="add"; plain `udevadm trigger` defaults to
+      # ACTION=="change", which would silently skip already-connected devices
+      command: udevadm trigger --action=add
 

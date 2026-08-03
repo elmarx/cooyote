@@ -1,0 +1,14 @@
+[Unit]
+Description=Cooyote Web Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/cooyote
+Restart=on-failure
+RestartSec=5
+DynamicUser=yes
+SupplementaryGroups=plugdev
+
+[Install]
+WantedBy=multi-user.target
