@@ -9,6 +9,7 @@ Restart=on-failure
 RestartSec=5
 DynamicUser=yes
 SupplementaryGroups=plugdev
+MemoryMax=32M
 
 [Install]
 WantedBy=multi-user.target
