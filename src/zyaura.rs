@@ -11,10 +11,14 @@ pub struct Sensor {
 pub enum Error {
     #[error(transparent)]
     HidError(#[from] HidError),
+    #[error("Device not found: {0}")]
+    DeviceNotFound(HidError),
     #[error("Encrypted data")]
     Encrypted,
     #[error("Checksum mismatch")]
     ChecksumMismatch,
+    #[error("no complete measurement received after {0} reads")]
+    IncompleteMeasurement(usize),
 }
 
 #[derive(PartialEq, Debug)]
@@ -27,7 +31,9 @@ impl Sensor {
     pub fn new() -> Result<Self, Error> {
         let api: hidapi::HidApi = hidapi::HidApi::new()?;
 
-        let device = api.open(VENDOR_ID, PRODUCT_ID).expect("Device not found!");
+        let device = api
+            .open(VENDOR_ID, PRODUCT_ID)
+            .map_err(Error::DeviceNotFound)?;
 
         // buffer 0 is the report id and must be set to 0x00. The remaining bytes are the key, but unused… so 0
         let buffer = vec![0; 9];
@@ -44,10 +50,14 @@ impl Sensor {
     }
 
     pub fn read(&self) -> Result<Measurement, Error> {
+        // a single reading is spread across multiple items (CO2, temperature, ...); bound the
+        // number of attempts so a misbehaving device can't hang this call forever
+        const MAX_ATTEMPTS: usize = 16;
+
         let mut co2: Option<u16> = None;
         let mut temp: Option<f32> = None;
 
-        loop {
+        for _ in 0..MAX_ATTEMPTS {
             let item = self.read_item()?;
             match item {
                 Item::CO2(c) => co2 = Some(c),
@@ -62,6 +72,8 @@ impl Sensor {
                 });
             }
         }
+
+        Err(Error::IncompleteMeasurement(MAX_ATTEMPTS))
     }
 }
 

@@ -11,10 +11,13 @@ pub async fn metrics(State(registry): State<Arc<Registry>>) -> (TypedHeader<Cont
     let mut buffer = vec![];
     let encoder = TextEncoder::new();
     let metric_families = registry.gather();
-    encoder.encode(&metric_families, &mut buffer).unwrap();
+    // there is a limited set of metrics, so unwrapping here should be safe
+    encoder
+        .encode(&metric_families, &mut buffer)
+        .expect("failed to encode metrics");
 
-    (
-        TypedHeader(ContentType::from_str(encoder.format_type()).unwrap()),
-        buffer,
-    )
+    // the format_type() points to a const value, so
+    let content_type = ContentType::from_str(encoder.format_type()).expect("invalid content type");
+
+    (TypedHeader(content_type), buffer)
 }
