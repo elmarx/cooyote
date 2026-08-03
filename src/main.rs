@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
 
-        thread::sleep(Duration::from_secs(60));
+        thread::sleep(Duration::from_mins(1));
     });
 
     let app = Router::new()
