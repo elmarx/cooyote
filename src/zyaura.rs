@@ -29,7 +29,7 @@ pub enum Error {
     IncompleteMeasurement(usize),
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub struct Measurement {
     pub temperature: f32,
     pub co2: u16,

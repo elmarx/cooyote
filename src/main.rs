@@ -23,11 +23,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sensor = zyaura::Sensor::new()?;
     info!("Connected to sensor");
 
+    let stream = sensor.stream();
+
     match args.command {
         Some(Commands::Debug) => {
-            debug::run(&sensor);
+            debug::run(stream).await;
             Ok(())
         }
-        None => daemon::run(sensor).await,
+        None => daemon::run(stream).await,
     }
 }
