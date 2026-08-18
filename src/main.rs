@@ -4,9 +4,10 @@ use std::error::Error;
 use tracing::info;
 
 mod cli;
+mod config;
 mod daemon;
 mod debug;
-mod metrics;
+mod http;
 mod zyaura;
 
 #[tokio::main]
@@ -20,6 +21,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let args = Args::parse();
 
+    // Config always has sensible defaults (HTTP enabled, MQTT disabled), even if no
+    // config file is found.
+    let config = config::get_config_path(args.config)
+        .map(config::Config::from_file)
+        .transpose()?
+        .unwrap_or_default();
+
+    info!(?config, "Loaded configuration");
+
     let sensor = zyaura::Sensor::new()?;
     info!("Connected to sensor");
 
@@ -30,6 +40,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             debug::run(stream).await;
             Ok(())
         }
-        None => daemon::run(stream).await,
+        None => daemon::run(stream, config).await,
     }
 }
