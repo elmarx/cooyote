@@ -1,7 +1,15 @@
 use hidapi::{HidDevice, HidError};
+use std::thread;
+use std::time::Duration;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::Stream;
 
 const VENDOR_ID: u16 = 0x04d9;
 const PRODUCT_ID: u16 = 0xa052;
+
+/// Time between reads when continuously streaming via `Sensor::stream`.
+const READ_INTERVAL: Duration = Duration::from_mins(1);
 
 pub struct Sensor {
     device: HidDevice,
@@ -74,6 +82,32 @@ impl Sensor {
         }
 
         Err(Error::IncompleteMeasurement(MAX_ATTEMPTS))
+    }
+
+    /// Consumes the sensor and continuously reads it on a dedicated
+    /// background thread (reading is a blocking HID operation), yielding a
+    /// stream of readings (or the error encountered on a given read) every
+    /// `READ_INTERVAL`.
+    ///
+    /// The background thread keeps running until the returned stream is
+    /// dropped, at which point its next attempt to send a reading fails and
+    /// it exits.
+    pub fn stream(self) -> impl Stream<Item = Result<Measurement, Error>> {
+        // bounded to 1: consumers only ever care about the latest reading anyway
+        let (tx, rx) = mpsc::channel(1);
+
+        thread::spawn(move || loop {
+            let measurement = self.read();
+
+            if tx.blocking_send(measurement).is_err() {
+                // receiving end has been dropped, nothing more to do
+                break;
+            }
+
+            thread::sleep(READ_INTERVAL);
+        });
+
+        ReceiverStream::new(rx)
     }
 }
 
