@@ -5,11 +5,32 @@ Wants=network-online.target
 
 [Service]
 ExecStart=/usr/local/bin/cooyote
+# or pass a config:
+# ExecStart=/usr/local/bin/cooyote --config /etc/cooyote/config.toml
+
 Restart=on-failure
 RestartSec=5
 DynamicUser=yes
 SupplementaryGroups=plugdev
 MemoryMax=32M
+
+# Environment=COOYOTE_CONFIG=/etc/cooyote/config.toml
+
+# Environment=MQTT_HOST=mqtt.example.com
+# Environment=MQTT_USERNAME=cooyote
+
+# file with mqtt-password, keep as root:root, 0600 — systemd will pass it with appropriate credentials 
+# LoadCredential=mqtt_password:/etc/cooyote/mqtt_password
+# Environment=MQTT_PASSWORD_FILE=%d/mqtt_password
+
+# or put environments into a file
+# EnvironmentFile=/etc/cooyote/cooyote.env
+#
+# example /etc/cooyote/cooyote.env (keep root:root, 0600, since it may contain secrets):
+#   MQTT_USERNAME=cooyote
+#   MQTT_HOST=mqtt.example.com
+#   MQTT_PASSWORD_FILE=/etc/cooyote/mqtt_password
+#   COOYOTE_CONFIG=/etc/cooyote/config.toml
 
 [Install]
 WantedBy=multi-user.target
