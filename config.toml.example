@@ -1,0 +1,25 @@
+# Cooyote Configuration File
+#
+# This file is optional: if not found (see resolution order below), cooyote
+# falls back to sensible defaults (Prometheus /metrics enabled on :8080, MQTT
+# disabled), so it keeps working as a plain Prometheus exporter without any
+# config at all.
+#
+# Resolution order: --config/-c CLI arg > COOYOTE_CONFIG env var >
+# ./config.toml > /etc/cooyote.toml
+
+[http]
+enabled = true  # set to false to disable the Prometheus /metrics endpoint entirely
+port = 8080
+
+[mqtt]
+enabled = false  # set to true to publish readings to MQTT / Home Assistant
+host = "localhost"  # can be overridden with the MQTT_HOST env var
+port = 1883  # optional, defaults to 1883
+topic_prefix = "cooyote"  # optional, defaults to "cooyote"
+availability_topic = "cooyote/availability"  # optional, used by Home Assistant to determine if the device is online
+homeassistant_topic = "homeassistant"  # optional, used for discovery and status, defaults to "homeassistant"
+# username = "your_mqtt_username"  # optional, can be overridden with the MQTT_USERNAME env var
+# password = "your_mqtt_password"  # optional, can be overridden with the MQTT_PASSWORD env var
+                                    # (or MQTT_PASSWORD_FILE, pointing to a file containing the password,
+                                    # e.g. for systemd's LoadCredential= mechanism)
