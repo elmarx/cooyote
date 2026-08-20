@@ -9,6 +9,7 @@ mod daemon;
 mod debug;
 mod error;
 mod http;
+mod mqtt;
 mod zyaura;
 
 #[tokio::main]

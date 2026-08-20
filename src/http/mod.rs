@@ -40,13 +40,12 @@ pub async fn run(
         .with_state(state);
 
     let address = format!("0.0.0.0:{}", http_config.port);
-    let listener =
-        TcpListener::bind(&address)
-            .await
-            .map_err(|source| CooyoteError::HttpBind {
-                address: address.clone(),
-                source,
-            })?;
+    let listener = TcpListener::bind(&address)
+        .await
+        .map_err(|source| CooyoteError::HttpBind {
+            address: address.clone(),
+            source,
+        })?;
     info!(%address, "listening");
     axum::serve(listener, app)
         .await

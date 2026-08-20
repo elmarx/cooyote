@@ -3,6 +3,7 @@
 
 use crate::config::Config;
 use crate::error::CooyoteError;
+use crate::mqtt;
 use crate::zyaura::{Error as SensorError, Measurement};
 use tokio::sync::watch;
 use tokio_stream::{Stream, StreamExt};
@@ -38,13 +39,29 @@ pub async fn run(
         }
     });
 
-    if config.mqtt.enabled {
-        info!("TODO: connect to mqtt");
-    }
+    // if MQTT is enabled, spawn its connection + publish loop in the background;
+    // we need the handle so we can keep the process alive on it if HTTP is disabled
+    let mqtt_handle = if config.mqtt.enabled {
+        let mqtt_rx = rx.clone();
+        let mqtt_config = config.mqtt; // partial move: config.http below stays valid
+        Some(tokio::spawn(async move {
+            if let Err(e) = mqtt::run(mqtt_config, mqtt_rx).await {
+                error!(error = %e, "MQTT publishing stopped");
+            }
+        }))
+    } else {
+        None
+    };
 
     if !config.http.enabled {
-        info!("HTTP server disabled via config, exiting");
-        return Ok(());
+        info!("HTTP server disabled via config");
+        return if let Some(handle) = mqtt_handle {
+            info!("running with MQTT only");
+            handle.await.map_err(CooyoteError::MqttTaskFailed)
+        } else {
+            info!("MQTT disabled too, exiting");
+            Ok(())
+        };
     }
 
     crate::http::run(rx, config.http).await
