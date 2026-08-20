@@ -1,17 +1,18 @@
 use crate::cli::{Args, Commands};
+use crate::error::CooyoteError;
 use clap::Parser;
-use std::error::Error;
 use tracing::info;
 
 mod cli;
 mod config;
 mod daemon;
 mod debug;
+mod error;
 mod http;
 mod zyaura;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<(), CooyoteError> {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()

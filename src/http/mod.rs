@@ -3,12 +3,12 @@
 mod metrics;
 
 use crate::config::HttpConfig;
+use crate::error::CooyoteError;
 use crate::zyaura::Measurement;
 use axum::routing::get;
 use axum::Router;
 use metrics::AppState;
 use prometheus::{Gauge, Opts, Registry};
-use std::error::Error;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::sync::watch;
@@ -19,7 +19,7 @@ use tracing::info;
 pub async fn run(
     rx: watch::Receiver<Measurement>,
     http_config: HttpConfig,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<(), CooyoteError> {
     let co2_gauge = Gauge::with_opts(Opts::new("co2_ppm", "co2 ppm"))?;
     let temperature_gauge =
         Gauge::with_opts(Opts::new("temperature_celsius", "temperature in celsius"))?;
@@ -40,9 +40,17 @@ pub async fn run(
         .with_state(state);
 
     let address = format!("0.0.0.0:{}", http_config.port);
-    let listener = TcpListener::bind(&address).await?;
+    let listener =
+        TcpListener::bind(&address)
+            .await
+            .map_err(|source| CooyoteError::HttpBind {
+                address: address.clone(),
+                source,
+            })?;
     info!(%address, "listening");
-    axum::serve(listener, app).await?;
+    axum::serve(listener, app)
+        .await
+        .map_err(CooyoteError::HttpServe)?;
 
     Ok(())
 }
