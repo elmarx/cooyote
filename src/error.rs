@@ -15,8 +15,14 @@ pub enum CooyoteError {
     #[error("failed to set up Prometheus metrics: {0}")]
     Metrics(#[from] prometheus::Error),
 
-    #[error("MQTT client error: {0}")]
-    Mqtt(#[from] rumqttc::ClientError),
+    #[error("Failed to publish MQTT HomeAssistant sensor autodiscovery message: {0}")]
+    MqttHaDiscovery(#[source] Box<rumqttc::v5::ClientError>),
+
+    #[error("Failed to publish MQTT sensor measurement: {0}")]
+    MqttSensorPublish(#[source] Box<rumqttc::v5::ClientError>),
+
+    #[error("Failed to publish MQTT availability message: {0}")]
+    MqttOnlinePublish(#[source] Box<rumqttc::v5::ClientError>),
 
     #[error("MQTT task panicked: {0}")]
     MqttTaskFailed(#[from] tokio::task::JoinError),

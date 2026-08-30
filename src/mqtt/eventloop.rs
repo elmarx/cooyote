@@ -1,5 +1,5 @@
 use crate::mqtt::event_handler::MqttEventHandler;
-use rumqttc::{Event, EventLoop, Incoming};
+use rumqttc::v5::{Event, EventLoop, Incoming};
 use std::time::Duration;
 use tracing::error;
 
@@ -25,11 +25,6 @@ async fn handle_connection<H: MqttEventHandler>(eventloop: &mut EventLoop, handl
             Ok(Event::Incoming(Incoming::ConnAck(_))) => {
                 current_backoff = INITIAL_BACKOFF;
                 handler.on_mqtt_connection_online().await;
-            }
-            Ok(Event::Incoming(Incoming::Publish(publish))) => {
-                handler
-                    .on_mqtt_message(publish.topic, publish.payload)
-                    .await;
             }
             Ok(_) => {}
             Err(e) => {

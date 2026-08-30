@@ -1,13 +1,12 @@
 use crate::config::MqttConfig;
-use rumqttc::{AsyncClient, EventLoop, LastWill, MqttOptions, QoS};
+use rumqttc::v5::mqttbytes::v5::LastWill;
+use rumqttc::v5::mqttbytes::QoS;
+use rumqttc::v5::{AsyncClient, EventLoop, MqttOptions};
 use std::time::Duration;
 
 /// Sets up the async MQTT client + event loop: configures a last-will-and-testament
-/// (marking the device "offline" on unclean disconnects) and subscribes to the
-/// Home Assistant status topic, so we know when to (re-)publish discovery messages.
-pub async fn init_client(
-    config: &MqttConfig,
-) -> Result<(AsyncClient, EventLoop), rumqttc::ClientError> {
+/// (marking the device "offline" on unclean disconnects).
+pub async fn init_client(config: &MqttConfig) -> (AsyncClient, EventLoop) {
     let mut mqtt_options = MqttOptions::new("cooyote", &config.host, config.port);
     mqtt_options.set_keep_alive(Duration::from_secs(30));
 
@@ -20,13 +19,9 @@ pub async fn init_client(
         "offline",
         QoS::AtLeastOnce,
         true,
+        None,
     );
     mqtt_options.set_last_will(last_will);
 
-    let (client, eventloop) = AsyncClient::new(mqtt_options, 10);
-
-    let ha_status_topic = format!("{}/status", config.homeassistant_topic);
-    client.subscribe(ha_status_topic, QoS::AtMostOnce).await?;
-
-    Ok((client, eventloop))
+    AsyncClient::new(mqtt_options, 10)
 }

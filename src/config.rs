@@ -74,8 +74,12 @@ pub struct MqttConfig {
     pub topic_prefix: String,
     /// availability (online/offline) topic, set via last-will-and-testament
     pub availability_topic: String,
-    /// homeassistant topic, used for discovery and status, defaults to homeassistant
+    /// homeassistant topic, used for the discovery topic prefix, defaults to homeassistant
     pub homeassistant_topic: String,
+    /// Number of days after which the (retained) discovery message expires at the broker if not
+    /// refreshed. Prevents "ghost" entities from sticking around forever should cooyote be
+    /// decommissioned. Defaults to 7 days.
+    pub discovery_expire_days: u64,
 }
 
 impl Default for MqttConfig {
@@ -89,6 +93,7 @@ impl Default for MqttConfig {
             topic_prefix: default_topic_prefix(),
             availability_topic: default_availability_topic(),
             homeassistant_topic: default_homeassistant_topic(),
+            discovery_expire_days: default_discovery_expire_days(),
         }
     }
 }
@@ -132,6 +137,10 @@ fn default_availability_topic() -> String {
 
 fn default_homeassistant_topic() -> String {
     "homeassistant".to_string()
+}
+
+fn default_discovery_expire_days() -> u64 {
+    7
 }
 
 impl Config {
