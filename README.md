@@ -1,25 +1,69 @@
 # COOyote
 
-Prometheus exporter for [TFA Dostman AIRCO2NTROL](https://www.tfa-dostmann.de/produkt/co2-monitor-airco2ntrol-mini-31-5006/).
+Reads CO₂ ppm and temperature from [TFA Dostman AIRCO2NTROL](https://www.tfa-dostmann.de/produkt/co2-monitor-airco2ntrol-mini-31-5006/) monitors via USB HID and publishes to Prometheus or Home Assistant via MQTT.
 
-## Cross-compiling for Raspberry Pi
+## Overview
 
-I'm running this on a Raspberry Pi Zero (which is basically a Raspberry Pi 1), cross-compiling is possible via [cross](https://github.com/cross-rs/cross).
+Connect AIRCO2NTROL monitors and publish sensor data in two ways:
 
-### Response example
+- **Prometheus:** exposes `/metrics` endpoint with CO₂ and temperature gauges
+- **MQTT:** publishes readings to Home Assistant with discovery support
 
+Both outputs can run simultaneously or independently via config.
+
+## Configuration
+
+Create a config file (e.g. `config.toml`) based on `config.toml.example`.
+
+cooyote looks in the following order for config files:
+
+- CLI argument `--config`
+- Environment variable `COOYOTE_CONFIG`
+- Current working directory: `config.toml`
+- global `/etc/cooyote.toml`
+
+Without a config file, cooyote defaults to Prometheus on `:8080` with MQTT disabled.
+
+### Prometheus
+
+```toml
+[http]
+enabled = true
+port = 8080
 ```
-# HELP co2_ppm co2 ppm
-# TYPE co2_ppm gauge
-co2_ppm 478
-# HELP temperature_celsius temperature in celsius
-# TYPE temperature_celsius gauge
-temperature_celsius 22.162506103515625
+
+Metrics are exposed at `http://localhost:8080/metrics`.
+
+### MQTT
+
+```toml
+[mqtt]
+enabled = true
+host = "localhost"
+port = 1883
+topic_prefix = "cooyote"
+username = "your_username"
+password = "your_password"
 ```
 
-## Implementation details
+Environment variable overrides: `MQTT_HOST`, `MQTT_USERNAME`, `MQTT_PASSWORD` (or `MQTT_PASSWORD_FILE` for systemd's `LoadCredential=`).
 
-There are multiple crates implementing reading the sensor (e.g. [co2mon](https://github.com/lnicola/co2mon)).
+Supports [Home Assistant MQTT discovery](https://www.home-assistant.io/integrations/sensor.mqtt/).
 
-Newer devices do not do the encryption anymore (reverse engineered [here](https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor)), which makes reading the device much easier (basically just decoding plain data), so it's implemented here to have full control over [hidapi](https://github.com/ruabmbua/hidapi-rs).
-`hidapi` now supports [basic-udev](https://github.com/xobs/basic-udev), so compiling does not require native libraries anymore, which takes a lot of pain out of cross-compiling!
+## Installation
+
+Build with [Rust](https://www.rust-lang.org/):
+
+```bash
+cargo install cooyote --git https://github.com/elmarx/cooyote
+```
+
+For ARM (e.g., Raspberry Pi), cross-compile using [cross](https://github.com/cross-rs/cross):
+
+```bash
+cross build --target aarch64-unknown-linux-gnu
+```
+
+## Implementation
+
+Newer AIRCO2NTROL devices transmit unencrypted data (reverse engineered [here](https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor)), enabling straightforward decoding. Uses [hidapi-rs](https://github.com/ruabmbua/hidapi-rs) with [basic-udev](https://github.com/xobs/basic-udev) for USB HID access without native library dependencies.
