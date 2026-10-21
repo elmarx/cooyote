@@ -19,7 +19,7 @@ port = 1883  # optional, defaults to 1883
 topic_prefix = "cooyote"  # optional, defaults to "cooyote"
 availability_topic = "cooyote/availability"  # optional, used by Home Assistant to determine if the device is online
 homeassistant_topic = "homeassistant"  # optional, used for the discovery topic prefix, defaults to "homeassistant"
-discovery_expire_days = 7  # optional, days after which the retained discovery message expires at the broker if not refreshed
+discovery_expire = "7d"  # optional, defaults to "7d" (humantime format, e.g. "12h", "7d"); the retained discovery message expires at the broker after this if not refreshed
 # username = "your_mqtt_username"  # optional, can be overridden with the MQTT_USERNAME env var
 # password = "your_mqtt_password"  # optional, can be overridden with the MQTT_PASSWORD env var
                                     # (or MQTT_PASSWORD_FILE, pointing to a file containing the password,

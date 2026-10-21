@@ -20,7 +20,8 @@ pub async fn run(config: MqttConfig, rx: watch::Receiver<Measurement>) -> Result
     info!(host = %config.host, port = config.port, "connecting to MQTT broker");
 
     // we publish discovery messages with expiry, so we have to republish periodically
-    let discovery_republish_interval = Duration::from_hours(config.discovery_expire_days * 24)
+    let discovery_republish_interval = config
+        .discovery_expire
         .saturating_sub(Duration::from_hours(1));
 
     let (client, eventloop) = init_connection::init_client(&config).await;
