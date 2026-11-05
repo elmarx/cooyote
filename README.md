@@ -64,6 +64,44 @@ For ARM (e.g., Raspberry Pi), cross-compile using [cross](https://github.com/cro
 cross build --target aarch64-unknown-linux-gnu
 ```
 
+### NixOS
+
+The flake provides a package, development shell, overlay, and NixOS module for
+`x86_64-linux` and `aarch64-linux`. Use `nix build` to build Cooyote or
+`nix develop` to enter the Rust development shell.
+
+Add the flake to your NixOS configuration:
+
+```nix
+inputs.cooyote.url = "github:elmarx/cooyote";
+inputs.cooyote.inputs.nixpkgs.follows = "nixpkgs";
+```
+
+Import `cooyote.nixosModules.default` and enable the service:
+
+```nix
+services.cooyote = {
+  enable = true;
+  http.openFirewall = true; # optional; serves /metrics on port 8080
+  mqtt = {
+    enable = true; # disabled by default
+    host = "mqtt.example.com";
+    username = "cooyote";
+  };
+  mqttPasswordFile = "/run/agenix/cooyote-mqtt-password";
+};
+```
+
+HTTP is enabled by default; set `http.enable = false` for MQTT-only operation.
+The module generates the TOML configuration, grants access to AIRCO2NTROL HID
+devices through udev, and runs Cooyote as a dynamic systemd user. The service is
+started when the device is plugged in and stopped when it is removed. Passwords are
+loaded using systemd credentials; provision the password file separately and use
+a quoted runtime path to keep it out of the Nix store.
+
+See [example-nixos-config.nix](example-nixos-config.nix) for a complete flake
+structure.
+
 ## Implementation
 
 Newer AIRCO2NTROL devices transmit unencrypted data (reverse engineered [here](https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor)), enabling straightforward decoding. Uses [hidapi-rs](https://github.com/ruabmbua/hidapi-rs) with [basic-udev](https://github.com/xobs/basic-udev) for USB HID access without native library dependencies.
